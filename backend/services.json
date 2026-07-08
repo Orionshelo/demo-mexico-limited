@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1",
+    "name": "Creación de Tienda en Línea",
+    "description": "Desarrollo completo de tu tienda en línea desde cero, optimizada para ventas y conversiones. Ideal para quienes no tienen presencia digital o buscan modernizarla.",
+    "category": "tecnologia"
+  },
+  {
+    "id": "2",
+    "name": "Fotografía con Inteligencia Artificial",
+    "description": "Plataforma de IA para crear fotografías de producto de alta calidad y redactar descripciones persuasivas. Mejora tu imagen en redes y tienda.",
+    "category": "marketing"
+  },
+  {
+    "id": "3",
+    "name": "Mentoría y Capacitación en Ventas",
+    "description": "Aprende a vender más y mejor. Capacitación especializada para estructurar tu proceso comercial y cerrar más tratos.",
+    "category": "comercializacion"
+  },
+  {
+    "id": "4",
+    "name": "Servicios Contables y Fiscales",
+    "description": "Asesoría contable para mantener tus finanzas en orden. Declaraciones, facturación y estrategia fiscal para emprendedores.",
+    "category": "finanzas"
+  },
+  {
+    "id": "5",
+    "name": "Estrategia de Marketing Digital y Social Selling",
+    "description": "Impulsa tu marca en Instagram y Facebook. Creación de campañas publicitarias y estrategias de social selling para captar leads.",
+    "category": "marketing"
+  },
+  {
+    "id": "6",
+    "name": "Asesoría Legal y Corporativa",
+    "description": "Protección legal para tu negocio. Registro de marca, contratos y constitución de sociedades.",
+    "category": "legal"
+  },
+  {
+    "id": "7",
+    "name": "Logística, Envíos y Empaques",
+    "description": "Optimiza tu cadena de suministro. Soluciones en empaques, embalajes y tarifas preferenciales de envío a todo el país.",
+    "category": "operaciones"
+  }
+]
