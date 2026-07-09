@@ -4,8 +4,11 @@ import { useRouter } from 'next/navigation';
 
 export default function Onboarding() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     companyName: '',
+    phone: '',
+    url: '',
     productDescription: '',
     isMexican: 'yes',
     hasSales: 'yes'
@@ -15,10 +18,34 @@ export default function Onboarding() {
     setFormData({...formData, [e.target.name]: e.target.value});
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate saving to Supabase, then redirect to diagnostic
+    setIsSubmitting(true);
+
+    // Save locally for the diagnostic/dashboard
     localStorage.setItem('ml_onboarding', JSON.stringify(formData));
+
+    // Also send to backend webhook for Google Sheets registration
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    try {
+      const email = localStorage.getItem('ml_user_email') || '';
+      await fetch(`${apiUrl}/api/webhooks/lead`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: formData.companyName,
+          correo: email,
+          telefono: formData.phone,
+          empresa: formData.companyName,
+          url: formData.url,
+          descripcion: formData.productDescription,
+        }),
+      });
+    } catch (error) {
+      console.warn('Backend not available, continuing with local data:', error);
+    }
+
+    setIsSubmitting(false);
     router.push('/diagnostic');
   };
 
@@ -38,6 +65,34 @@ export default function Onboarding() {
               className="form-input" 
               placeholder="Ej. Salsas Don José" 
               value={formData.companyName}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Teléfono (WhatsApp)</label>
+            <input 
+              type="tel" 
+              name="phone" 
+              required
+              className="form-input" 
+              placeholder="Ej. +52 55 1234 5678" 
+              value={formData.phone}
+              onChange={handleChange}
+            />
+            <span style={{ fontSize: '0.75rem', color: '#71717a', marginTop: '4px', display: 'block' }}>
+              Incluye código de país. Este será tu canal de comunicación principal.
+            </span>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Sitio web o red social principal</label>
+            <input 
+              type="url" 
+              name="url" 
+              className="form-input" 
+              placeholder="Ej. https://instagram.com/tuempresa" 
+              value={formData.url}
               onChange={handleChange}
             />
           </div>
@@ -71,8 +126,13 @@ export default function Onboarding() {
             ></textarea>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
-            Continuar al Diagnóstico Digital
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            style={{ width: '100%', marginTop: '1rem' }}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Enviando...' : 'Continuar al Diagnóstico Digital'}
           </button>
         </form>
       </div>

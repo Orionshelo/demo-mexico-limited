@@ -1,61 +1,114 @@
-# Mexico Limited - Backend API
+# Mexico Limited — AI Agent Backend
 
-Esta es la API del backend desarrollada en Flask para calcular la similitud por coseno entre las necesidades de los emprendedores y los servicios ofrecidos por Mexico Limited.
+Backend del Agente de IA de Mexico Limited. Automatiza la captación, triaje, conversión y onboarding de leads vía WhatsApp, integrado con Google Sheets como base de datos.
 
-## Requisitos
+## Stack Tecnológico
 
-- Python 3.9+
-- Flask
-- scikit-learn
-- flask-cors
+- **Python 3.9+** / **Flask** — API y Webhooks
+- **OpenAI (GPT-4o-mini)** — Motor de conversación del agente
+- **Google Sheets API (gspread)** — Base de datos de leads
+- **Meta WhatsApp Cloud API** — Mensajería con emprendedores
+- **SendGrid** — Notificaciones al ejecutivo (comprobantes, handoff)
+- **APScheduler** — Cron job para detección de pagos aprobados
 
-## Instalación
+## Estructura
 
-1. Activa el entorno virtual:
-   En Windows:
-   ```bash
-   venv\Scripts\activate
-   ```
-   En macOS/Linux:
-   ```bash
-   source venv/bin/activate
-   ```
+```
+backend/
+├── app.py                    # Entry point (Application Factory)
+├── config.py                 # Variables de entorno centralizadas
+├── agent/                    # Motor del Agente de IA
+│   ├── orchestrator.py       # Máquina de estados principal
+│   └── prompts/              # System prompt y plantillas WA
+├── api/webhooks/             # Endpoints de webhook
+│   ├── lead_webhook.py       # POST /api/webhooks/lead
+│   └── whatsapp_webhook.py   # GET+POST /api/webhooks/whatsapp
+├── services/
+│   ├── sheets/               # CRUD Google Sheets
+│   ├── whatsapp/             # Meta API client + parser
+│   └── notifications/        # Email al ejecutivo
+├── utils/scoring.py          # Algoritmo de madurez digital (0-100)
+├── jobs/payment_watcher.py   # Cron de detección de pagos
+└── tests/                    # Unit tests
+```
 
-2. Instala las dependencias si no lo has hecho:
-   ```bash
-   pip install Flask scikit-learn flask-cors supabase
-   ```
+## Desarrollo Local
 
-## Ejecución
-
-Para correr el servidor localmente en el puerto 5000:
 ```bash
+# 1. Crear y activar venv
+python -m venv venv
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # macOS/Linux
+
+# 2. Instalar dependencias
+pip install -r requirements.txt
+
+# 3. Copiar y configurar variables de entorno
+cp .env.example .env
+# Editar .env con tus credenciales reales
+
+# 4. Correr el servidor
 python app.py
+# → http://localhost:5000
 ```
 
 ## Endpoints
 
-### `POST /api/match`
-Calcula la compatibilidad entre las necesidades del usuario y los servicios del catálogo.
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/match` | Matching de servicios por similitud (demo original) |
+| `POST` | `/api/webhooks/lead` | Recibe leads del formulario de la Landing Page |
+| `GET` | `/api/webhooks/whatsapp` | Verificación del webhook de Meta |
+| `POST` | `/api/webhooks/whatsapp` | Mensajes entrantes de WhatsApp |
+| `GET` | `/api/health` | Health check y validación de config |
 
-**Request:**
+### `POST /api/webhooks/lead`
+
 ```json
 {
-  "needs": "Necesito ayuda para vender más por redes sociales y tomar fotos de mis productos."
+  "nombre": "Juan Pérez",
+  "correo": "juan@example.com",
+  "telefono": "+525512345678",
+  "empresa": "Artesanías MX",
+  "url": "https://instagram.com/artesaniasmx",
+  "descripcion": "Vendemos artesanías mexicanas..."
 }
 ```
 
-**Response:**
-```json
-{
-  "matches": [
-    {
-      "id": "2",
-      "name": "Fotografía con Inteligencia Artificial",
-      ...
-      "match_score": 24.5
-    },
-    ...
-  ]
-}
+---
+
+## Deploy en Render
+
+### 1. Crear Web Service en Render
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `gunicorn app:app`
+- **Environment:** Python 3
+
+### 2. Variables de Entorno en Render
+Configurar en el dashboard de Render (Environment → Add Environment Variable):
+
+| Variable | Valor |
+|---|---|
+| `META_WHATSAPP_TOKEN` | Token de Meta Business API |
+| `META_PHONE_NUMBER_ID` | ID del número de WhatsApp |
+| `META_VERIFY_TOKEN` | Token secreto para verificar webhook |
+| `GOOGLE_SHEETS_CREDENTIALS_JSON` | **Pegar el JSON completo** del Service Account |
+| `GOOGLE_SHEETS_SPREADSHEET_ID` | ID de la hoja de Google Sheets |
+| `OPENAI_API_KEY` | API key de OpenAI |
+| `SENDGRID_API_KEY` | API key de SendGrid |
+| `EXECUTIVE_EMAIL` | Email del ejecutivo de validación |
+
+> **⚠️ Nota:** En Render, usa `GOOGLE_SHEETS_CREDENTIALS_JSON` (el JSON completo)
+> en lugar de `GOOGLE_SHEETS_CREDENTIALS_FILE` (que es para desarrollo local).
+
+### 3. Configurar Webhook de Meta
+Una vez desplegado, el URL del webhook será:
 ```
+https://tu-servicio.onrender.com/api/webhooks/whatsapp
+```
+Configurar en Meta Business Manager → WhatsApp → Configuration → Webhook URL.
+
+### 4. Consideración: Render Free Tier
+El tier gratuito de Render suspende el servicio tras 15 minutos de inactividad.
+Para una demo, esto funciona, pero el primer mensaje de WhatsApp podría tardar ~30 segundos
+mientras el servicio se reactiva. Para producción, usar el tier Starter ($7/mes).

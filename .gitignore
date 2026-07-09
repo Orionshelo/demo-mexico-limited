@@ -1,7 +1,10 @@
 # Backend
 backend/venv/
-backend/__pycache__/
+**/__pycache__/
 *.pyc
+
+# Google Service Account Credentials (SENSITIVE)
+backend/credentials.json
 
 # IDEs and OS
 .DS_Store
@@ -12,3 +15,4 @@ backend/__pycache__/
 *.env
 *.env.*
 !.env.example
+!backend/.env.example
