@@ -82,8 +82,14 @@
             50% { opacity: 0.4; }
         }
 
-        .demo-badge {
+        .header-actions {
             margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .demo-badge {
             background: rgba(0,168,132,0.15);
             color: #00a884;
             font-size: 11px;
@@ -91,6 +97,23 @@
             padding: 4px 10px;
             border-radius: 12px;
             letter-spacing: 0.5px;
+        }
+
+        .reset-btn {
+            background: rgba(206,17,38,0.15);
+            color: #ff6b6b;
+            border: none;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: background 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: rgba(206,17,38,0.3);
         }
 
         /* ── Messages Area ── */
@@ -186,7 +209,7 @@
             30% { transform: translateY(-6px); }
         }
 
-        /* ── Welcome message ── */
+        /* ── System message ── */
         .system-message {
             align-self: center;
             background: rgba(32,44,51,0.8);
@@ -291,18 +314,6 @@
         .setup-bar input:focus {
             border-color: #00a884;
         }
-
-        /* ── Template message styling ── */
-        .template-badge {
-            display: inline-block;
-            background: rgba(0,168,132,0.15);
-            color: #00a884;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-bottom: 4px;
-        }
     </style>
 </head>
 <body>
@@ -314,7 +325,10 @@
                 <h2>Mexico Limited Bot</h2>
                 <p><span class="status-dot"></span>Agente IA activo</p>
             </div>
-            <span class="demo-badge">SIMULADOR</span>
+            <div class="header-actions">
+                <span class="demo-badge">SIMULADOR</span>
+                <button class="reset-btn" id="reset-btn" title="Nueva conversación">🔄 Nueva</button>
+            </div>
         </div>
 
         <!-- Setup -->
@@ -329,8 +343,8 @@
         <div class="chat-messages" id="chat-messages">
             <div class="system-message">
                 Simulador de WhatsApp para demos.<br>
-                Los mensajes se procesan a través del agente IA real<br>
-                y se registran en Google Sheets.
+                Los mensajes se procesan con el agente IA real.<br>
+                Haz clic en 🔄 Nueva para reiniciar.
             </div>
         </div>
 
@@ -360,6 +374,7 @@
         const messagesEl = document.getElementById('chat-messages');
         const inputEl = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
+        const resetBtn = document.getElementById('reset-btn');
         const typingEl = document.getElementById('typing');
         const phoneEl = document.getElementById('sim-phone');
         const nameEl = document.getElementById('sim-name');
@@ -370,14 +385,27 @@
             });
         }
 
-        function addMessage(text, sender, extra = '') {
+        function addMessage(text, sender) {
             const div = document.createElement('div');
             div.className = `message ${sender}`;
+
+            // Format bold text (*text* → <strong>)
+            let formatted = text
+                .replace(/\n/g, '<br>')
+                .replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
+
             div.innerHTML = `
-                ${extra}
-                ${text.replace(/\n/g, '<br>')}
+                ${formatted}
                 <div class="time">${getTime()}</div>
             `;
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'system-message';
+            div.textContent = text;
             messagesEl.appendChild(div);
             messagesEl.scrollTop = messagesEl.scrollHeight;
         }
@@ -395,7 +423,6 @@
             const text = inputEl.value.trim();
             if (!text) return;
 
-            // Show user message
             addMessage(text, 'user');
             inputEl.value = '';
             setLoading(true);
@@ -413,17 +440,11 @@
 
                 const data = await res.json();
 
-                if (data.responses && data.responses.length > 0) {
+                if (data.error) {
+                    addMessage('⚠️ ' + data.error, 'bot');
+                } else if (data.responses && data.responses.length > 0) {
                     for (const resp of data.responses) {
-                        if (resp.type === 'template') {
-                            const badge = '<span class="template-badge">📋 PLANTILLA: ' + resp.template + '</span><br>';
-                            const templateText = resp.parameters
-                                ? resp.parameters.join(' | ')
-                                : '(sin parámetros)';
-                            addMessage(templateText, 'bot', badge);
-                        } else {
-                            addMessage(resp.text || '(sin respuesta)', 'bot');
-                        }
+                        addMessage(resp.text || '(sin respuesta)', 'bot');
                     }
                 } else {
                     addMessage('(El agente no generó respuesta)', 'bot');
@@ -436,8 +457,28 @@
             }
         }
 
+        async function resetConversation() {
+            try {
+                await fetch('/api/simulator/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phoneEl.value.trim(),
+                    }),
+                });
+            } catch (e) {
+                // Ignore errors
+            }
+
+            // Clear chat UI
+            messagesEl.innerHTML = '';
+            addSystemMessage('Conversación reiniciada — ' + getTime());
+            inputEl.focus();
+        }
+
         // Event listeners
         sendBtn.addEventListener('click', sendMessage);
+        resetBtn.addEventListener('click', resetConversation);
         inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
