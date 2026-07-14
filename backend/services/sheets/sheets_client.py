@@ -215,6 +215,31 @@ class SheetsClient:
 
         logger.info(f"Lead at row {row} updated: {list(fields.keys())}")
 
+    def get_all_leads(self) -> list[dict[str, Any]]:
+        """
+        Retorna todos los leads registrados en la hoja.
+
+        Returns:
+            Lista de diccionarios con datos del lead y _row.
+        """
+        ws = self._get_worksheet()
+        all_values = ws.get_all_values()
+
+        if len(all_values) <= 1:
+            return []
+
+        leads = []
+        for row_num, row_values in enumerate(all_values[1:], start=2):
+            lead = {"_row": row_num}
+            for i, col_name in enumerate(LEAD_COLUMNS):
+                if i < len(row_values):
+                    lead[col_name] = row_values[i]
+                else:
+                    lead[col_name] = ""
+            leads.append(lead)
+
+        return leads
+
     def get_leads_by_status(
         self, status: str, additional_filter: Optional[dict[str, str]] = None
     ) -> list[dict[str, Any]]:
