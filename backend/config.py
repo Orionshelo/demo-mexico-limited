@@ -6,7 +6,11 @@ Lee variables de entorno desde .env con valores por defecto seguros.
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# override=True hace que el archivo .env tenga prioridad sobre variables de
+# entorno preexistentes del sistema (útil en desarrollo local, donde un
+# placeholder viejo en el entorno no debe pisar el .env). En producción
+# (Render) no existe .env, así que esto es un no-op y las env vars mandan.
+load_dotenv(override=True)
 
 
 # ── Meta WhatsApp Business API ────────────────────────────────────
@@ -72,6 +76,11 @@ TIENDANUBE_LINK: str = os.getenv("TIENDANUBE_LINK", "")
 FLASK_ENV: str = os.getenv("FLASK_ENV", "development")
 PAYMENT_POLL_INTERVAL_MINUTES: int = int(
     os.getenv("PAYMENT_POLL_INTERVAL_MINUTES", "5")
+)
+# Intervalo del cron de nurturing (seguimiento de leads fríos).
+# La cadencia real es de horas/días; basta con revisar cada hora.
+NURTURE_POLL_INTERVAL_MINUTES: int = int(
+    os.getenv("NURTURE_POLL_INTERVAL_MINUTES", "60")
 )
 
 # Human handoff keywords — agent watches for these in user messages

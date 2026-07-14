@@ -12,6 +12,7 @@ from flask import Blueprint, request, jsonify
 
 from services.sheets.sheets_client import SheetsClient
 from services.sheets.schema import LeadStatus
+from services.whatsapp.whatsapp_client import WhatsAppClient
 
 logger = logging.getLogger(__name__)
 
@@ -89,16 +90,37 @@ def receive_lead():
 
         logger.info(f"New lead inserted: {data['nombre']} ({phone}) at row {row}")
 
+        # Contacto inicial proactivo: enviar la plantilla de bienvenida por
+        # WhatsApp para arrancar el triaje. Un fallo aquí no debe tumbar el
+        # registro del lead (ya quedó guardado en Sheets).
+        welcome_sent = _send_welcome(phone, data["nombre"])
+
         return jsonify({
             "status": "created",
             "message": "Lead registered successfully.",
             "phone": phone,
             "row": row,
+            "welcome_sent": welcome_sent,
         }), 201
 
     except Exception as e:
         logger.error(f"Error processing lead webhook: {e}")
         return jsonify({"error": "Internal server error"}), 500
+
+
+def _send_welcome(phone: str, name: str) -> bool:
+    """
+    Envía la plantilla de bienvenida (recepcion_lead) por WhatsApp.
+    Aislado en try/except para que un fallo de mensajería no afecte
+    el registro del lead.
+    """
+    try:
+        WhatsAppClient().send_welcome_template(to=phone, name=name)
+        logger.info(f"Welcome template sent to {phone}")
+        return True
+    except Exception as e:
+        logger.error(f"Could not send welcome template to {phone}: {e}")
+        return False
 
 
 def _normalize_phone(phone: str) -> str:

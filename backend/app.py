@@ -103,7 +103,10 @@ def _start_scheduler(app: Flask) -> None:
     """Initializes the APScheduler for the payment watcher cron job."""
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
-        from config import PAYMENT_POLL_INTERVAL_MINUTES
+        from config import (
+            PAYMENT_POLL_INTERVAL_MINUTES,
+            NURTURE_POLL_INTERVAL_MINUTES,
+        )
 
         scheduler = BackgroundScheduler()
 
@@ -111,6 +114,11 @@ def _start_scheduler(app: Flask) -> None:
             with app.app_context():
                 from jobs.payment_watcher import check_approved_payments
                 check_approved_payments()
+
+        def run_nurture_watcher():
+            with app.app_context():
+                from jobs.nurture_watcher import run_nurture_cycle
+                run_nurture_cycle()
 
         scheduler.add_job(
             run_payment_watcher,
@@ -120,10 +128,22 @@ def _start_scheduler(app: Flask) -> None:
             name="Check for approved payments",
         )
 
+        scheduler.add_job(
+            run_nurture_watcher,
+            "interval",
+            minutes=NURTURE_POLL_INTERVAL_MINUTES,
+            id="nurture_watcher",
+            name="Follow up on cold leads",
+        )
+
         scheduler.start()
         logger.info(
             f"📅 Payment watcher scheduled every "
             f"{PAYMENT_POLL_INTERVAL_MINUTES} minutes."
+        )
+        logger.info(
+            f"📅 Nurture watcher scheduled every "
+            f"{NURTURE_POLL_INTERVAL_MINUTES} minutes."
         )
 
     except ImportError:

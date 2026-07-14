@@ -5,6 +5,10 @@ Define la personalidad, reglas de negocio, lógica de extracción
 de entidades, y reglas de human handoff del agente conversacional.
 """
 
+# Permite la sintaxis de anotaciones `dict | None` en Python 3.9
+# (PEP 604 en tiempo de ejecución requiere 3.10+).
+from __future__ import annotations
+
 
 def build_system_prompt(lead_data: dict | None = None) -> str:
     """

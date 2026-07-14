@@ -27,10 +27,39 @@ backend/
 │   ├── sheets/               # CRUD Google Sheets
 │   ├── whatsapp/             # Meta API client + parser
 │   └── notifications/        # Email al ejecutivo
-├── utils/scoring.py          # Algoritmo de madurez digital (0-100)
-├── jobs/payment_watcher.py   # Cron de detección de pagos
+├── utils/
+│   ├── scoring.py            # Algoritmo de madurez digital (0-100)
+│   └── nurture.py            # Lógica de seguimiento (nurturing) — pura
+├── jobs/
+│   ├── payment_watcher.py    # Cron de detección de pagos
+│   └── nurture_watcher.py    # Cron de seguimiento de leads fríos
 └── tests/                    # Unit tests
 ```
+
+## Flujo del Agente (end-to-end)
+
+1. **Registro** — La Landing Page hace `POST /api/webhooks/lead`. El lead se
+   guarda en Google Sheets (CRM) y el agente **envía automáticamente la
+   plantilla de bienvenida** por WhatsApp para iniciar el triaje.
+2. **Triaje** — Conversación por WhatsApp: reglas de descarte (mexicano /
+   multinivel / perecedero) y extracción de entidades.
+3. **Score de madurez** — Se calcula (0-100) y se guarda con su desglose.
+4. **Pago** — Si califica, se envían los datos de pago; el lead manda su
+   comprobante (imagen) y el ejecutivo lo valida por email.
+5. **Onboarding** — Al aprobarse el pago, el `payment_watcher` envía la guía
+   y el enlace de Calendly.
+6. **Nurturing** — El `nurture_watcher` re-engancha por WhatsApp/email a los
+   leads que se enfrían:
+   - `sin_respuesta`: registrados que nunca contestaron (Estatus "Nuevo").
+   - `pago_pendiente`: calificados que no completan el pago.
+
+   La cadencia y el tope de mensajes viven en `utils/nurture.py`. El avance se
+   persiste en las columnas `Nurture_Etapa` y `Ultimo_Nurture`.
+
+   > **⚠️ Producción:** los mensajes de WhatsApp fuera de la ventana de 24h
+   > requieren **plantillas pre-aprobadas por Meta**. En la demo se envían como
+   > texto libre; para producción, registra cada mensaje de la secuencia como
+   > plantilla y despáchalo con `send_template`.
 
 ## Desarrollo Local
 

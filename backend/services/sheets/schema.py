@@ -60,6 +60,8 @@ LEAD_COLUMNS: list[str] = [
     "Razon_Descarte",       # R - DiscardReason o vacío
     "Notas_Agente",         # S - Notas del agente/resumen
     "Historial_Conversacion", # T - JSON serializado de mensajes
+    "Ultimo_Nurture",       # U - Timestamp ISO del último seguimiento enviado
+    "Nurture_Etapa",        # V - Etapa de nurturing ya enviada (0,1,2...)
 ]
 
 # Mapeo de nombre de columna → letra de columna (1-indexed)

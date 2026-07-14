@@ -175,6 +175,33 @@ class EmailService:
 
         return self._send_email(subject=subject, body_html=body_html)
 
+    def send_lead_nurture(
+        self,
+        to_email: str,
+        subject: str,
+        body_html: str,
+    ) -> bool:
+        """
+        Envía un email de seguimiento (nurturing) directamente al lead.
+
+        A diferencia de las notificaciones internas, este correo va al
+        emprendedor (no al ejecutivo).
+
+        Args:
+            to_email: Correo del emprendedor.
+            subject: Asunto del correo.
+            body_html: Contenido HTML del correo.
+
+        Returns:
+            True si se envió (o se logeó) exitosamente.
+        """
+        if not to_email:
+            logger.warning("Nurture email skipped: lead has no email.")
+            return False
+        return self._send_email(
+            subject=subject, body_html=body_html, to_email=to_email
+        )
+
     def _send_email(
         self,
         subject: str,
@@ -182,15 +209,17 @@ class EmailService:
         attachment_data: Optional[bytes] = None,
         attachment_filename: Optional[str] = None,
         attachment_mime: Optional[str] = None,
+        to_email: Optional[str] = None,
     ) -> bool:
         """Internal method to send an email via SendGrid or log it."""
-        if not EXECUTIVE_EMAIL:
-            logger.warning("EXECUTIVE_EMAIL not configured, skipping email.")
+        recipient = to_email or EXECUTIVE_EMAIL
+        if not recipient:
+            logger.warning("No recipient configured, skipping email.")
             return False
 
         if not self._client:
             logger.info(
-                f"[EMAIL LOG] To: {EXECUTIVE_EMAIL} | Subject: {subject}\n"
+                f"[EMAIL LOG] To: {recipient} | Subject: {subject}\n"
                 f"Body: {body_html[:200]}..."
             )
             return True
@@ -198,7 +227,7 @@ class EmailService:
         try:
             message = Mail(
                 from_email=NOTIFICATION_FROM_EMAIL,
-                to_emails=EXECUTIVE_EMAIL,
+                to_emails=recipient,
                 subject=subject,
                 html_content=body_html,
             )
