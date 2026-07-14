@@ -41,6 +41,10 @@ OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_TEMPERATURE: float = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
 
+# ── Admin ────────────────────────────────────────────────────────
+
+ADMIN_SECRET_KEY: str = os.getenv("ADMIN_SECRET_KEY", "demo123")
+
 
 # ── Notificaciones ────────────────────────────────────────────────
 
