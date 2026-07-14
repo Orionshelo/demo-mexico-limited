@@ -30,9 +30,11 @@ def create_app() -> Flask:
     # ── Register Blueprints ───────────────────────────────────────
     from api.webhooks.lead_webhook import lead_webhook_bp
     from api.webhooks.whatsapp_webhook import whatsapp_webhook_bp
+    from api.simulator.simulator_api import simulator_bp
 
     app.register_blueprint(lead_webhook_bp)
     app.register_blueprint(whatsapp_webhook_bp)
+    app.register_blueprint(simulator_bp)
 
     # ── Existing Service Matching Feature ─────────────────────────
     # (Preserved from the original demo)
